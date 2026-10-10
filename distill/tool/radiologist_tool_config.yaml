@@ -1,0 +1,70 @@
+# verl tool config for MedPanel v2 mock-tool RL (ToolAgentLoop).
+# Descriptions mirror the @tool docstrings in medpanel_v2_tool.py so the rollout
+# prompt matches the SFT recording.
+
+tools:
+  - class_name: "distill.tool.radiologist.radiologist_mock_tool.MedPanelV2MockTool"
+    config:
+      type: native
+      cache_path: "/dev/shm/medpanel_v2_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: list_available_images
+        description: >-
+          List all available imaging modalities for this patient.
+          Returns modality names, shapes, and descriptions.
+        parameters:
+          type: object
+          properties: {}
+          required: []
+
+  - class_name: "distill.tool.radiologist.radiologist_mock_tool.MedPanelV2MockTool"
+    config:
+      type: native
+      cache_path: "/dev/shm/medpanel_v2_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: view_image
+        description: >-
+          View a specific axial slice from a modality at a given visit.
+          Returns the image and metadata.
+        parameters:
+          type: object
+          properties:
+            modality:
+              type: string
+              description: "Modality name (e.g. 'brain_t1', 'heart_short_axis', 'liver_ideal', 'dixon_8_W')"
+            visit:
+              type: string
+              description: "'v1' for baseline or 'v2' for follow-up"
+            slice_idx:
+              type: integer
+              description: "Slice index (use -1 for middle slice)"
+          required: [modality, visit]
+
+  - class_name: "distill.tool.radiologist.radiologist_mock_tool.MedPanelV2MockTool"
+    config:
+      type: native
+      cache_path: "/dev/shm/medpanel_v2_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: compare_visits
+        description: >-
+          Compare the same slice between Visit 1 and Visit 2 side-by-side.
+          Returns a side-by-side comparison image.
+        parameters:
+          type: object
+          properties:
+            modality:
+              type: string
+              description: "Modality name (e.g. 'brain_t1', 'liver_ideal', 'dixon_8_W')"
+            slice_idx:
+              type: integer
+              description: "Slice index (use -1 for middle slice)"
+          required: [modality]

@@ -1,0 +1,69 @@
+# verl tool config for Vista3D mock-tool RL (ToolAgentLoop).
+# Descriptions mirror the @tool docstrings in vista3d_tool.py so the rollout
+# prompt matches the SFT recording.
+
+tools:
+  - class_name: "distill.tool.anatomist.anatomist_mock_tool.Vista3DMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/vista3d_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: vista3d_segment
+        description: >-
+          Get Vista3D segmentation volume for a specific organ, broken down per body station.
+          Returns per-station volumes, slice ranges, and total volume. Use this first
+          to understand the organ's spatial distribution across body stations.
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: Organ name (e.g., "liver", "spleen", "pancreas", "kidney_left", "heart")
+          required: [organ]
+
+  - class_name: "distill.tool.anatomist.anatomist_mock_tool.Vista3DMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/vista3d_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: vista3d_compare_stations
+        description: >-
+          Compare an organ's volume and morphology between dixon_8_W (thorax) and dixon_12_W (abdomen).
+          Returns per-station volumes, slice overlap info, volume difference, and
+          overlay images showing the organ highlighted on its largest slice in each station.
+          Use this for organs that may span both stations (liver, pancreas, kidneys, spleen).
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: Organ name (e.g., "liver", "pancreas", "kidney_left")
+          required: [organ]
+
+  - class_name: "distill.tool.anatomist.anatomist_mock_tool.Vista3DMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/vista3d_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: vista3d_compare_visits
+        description: >-
+          Compare an organ's volume between V1 (baseline) and V2 (follow-up) MRI visits.
+          Returns V1 volume, V2 volume, volume change, per-station breakdown, and
+          overlay images from both visits for visual comparison.
+          This is the PRIMARY tool for analyzing organ volume changes over time.
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: Organ name (e.g., "liver", "pancreas", "kidney_left", "spleen")
+          required: [organ]

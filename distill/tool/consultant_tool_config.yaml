@@ -1,0 +1,233 @@
+# MedBoard integrated-review tool config for multi-turn tool RL.
+# 10 tools: 3 medpanel_v2 + 3 vista3d + 2 medgemma_report + 2 skill_memory.
+# All mock/replay tools; patient_id comes via tools_kwargs create_kwargs.
+
+tools:
+  # ── MedPanel v2 imaging tools ────────────────────────────────────────────
+  - class_name: "distill.tool.radiologist.radiologist_mock_tool.MedPanelV2MockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/medpanel_v2_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: list_available_images
+        description: >-
+          List all available imaging modalities for this patient.
+          Returns modality names, shapes, and descriptions.
+        parameters:
+          type: object
+          properties: {}
+          required: []
+
+  - class_name: "distill.tool.radiologist.radiologist_mock_tool.MedPanelV2MockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/medpanel_v2_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: view_image
+        description: >-
+          View a specific axial slice from a modality at a given visit.
+          Returns the image and metadata. Use for targeted verification of claims.
+        parameters:
+          type: object
+          properties:
+            modality:
+              type: string
+              description: "Modality name (e.g. 'brain_t1', 'heart_short_axis', 'liver_ideal', 'dixon_8_W')"
+            visit:
+              type: string
+              description: "'v1' for baseline or 'v2' for follow-up"
+            slice_idx:
+              type: integer
+              description: "Slice index (use -1 for middle slice)"
+          required: [modality, visit]
+
+  - class_name: "distill.tool.radiologist.radiologist_mock_tool.MedPanelV2MockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/medpanel_v2_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: compare_visits
+        description: >-
+          Compare the same slice between Visit 1 and Visit 2 side-by-side.
+          Returns a side-by-side comparison image.
+        parameters:
+          type: object
+          properties:
+            modality:
+              type: string
+              description: "Modality name (e.g. 'brain_t1', 'liver_ideal', 'dixon_8_W')"
+            slice_idx:
+              type: integer
+              description: "Slice index (use -1 for middle slice)"
+          required: [modality]
+
+  # ── Vista3D volumetry tools ──────────────────────────────────────────────
+  - class_name: "distill.tool.anatomist.anatomist_mock_tool.Vista3DMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/vista3d_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: vista3d_segment
+        description: >-
+          Get Vista3D segmentation volume for a specific organ, broken down per body station.
+          Returns per-station volumes, slice ranges, and total volume.
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: Organ name (e.g., "liver", "spleen", "pancreas", "kidney_left", "heart")
+          required: [organ]
+
+  - class_name: "distill.tool.anatomist.anatomist_mock_tool.Vista3DMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/vista3d_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: vista3d_compare_stations
+        description: >-
+          Compare an organ's volume and morphology between dixon_8_W (thorax) and dixon_12_W (abdomen).
+          Use for organs that may span both stations (liver, pancreas, kidneys, spleen).
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: Organ name (e.g., "liver", "pancreas", "kidney_left")
+          required: [organ]
+
+  - class_name: "distill.tool.anatomist.anatomist_mock_tool.Vista3DMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/vista3d_tool_cache/tool_cache.json"
+      include_images: true
+    tool_schema:
+      type: function
+      function:
+        name: vista3d_compare_visits
+        description: >-
+          Compare an organ's volume between V1 (baseline) and V2 (follow-up) MRI visits.
+          Returns V1 volume, V2 volume, volume change, per-station breakdown, and overlay images.
+          PRIMARY tool for analyzing organ volume changes over time.
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: Organ name (e.g., "liver", "pancreas", "kidney_left", "spleen", "heart")
+          required: [organ]
+
+  # ── MedGemma report tools ────────────────────────────────────────────────
+  - class_name: "distill.tool.consultant.medgemma_report_mock_tool.MedGemmaReportMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/medgemma_report_cache/tool_cache.json"
+    tool_schema:
+      type: function
+      function:
+        name: list_available_reports
+        description: >-
+          List which MedGemma draft reports (findings/impression/followup) exist
+          for this patient, per organ and sequence.
+        parameters:
+          type: object
+          properties: {}
+          required: []
+
+  - class_name: "distill.tool.consultant.medgemma_report_mock_tool.MedGemmaReportMockTool"
+    config:
+      type: native
+      cache_path: "/mnt/faster_nas/benyou.mys/medixrl/data/medgemma_report_cache/tool_cache.json"
+    tool_schema:
+      type: function
+      function:
+        name: get_report
+        description: >-
+          Read a MedGemma draft report. These are AUTOMATED draft reports and may
+          contain hallucinations - treat them as claims to verify against imaging
+          and volumetry, never as ground truth.
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: "Organ: brain, heart, liver, pancreas, or wholebody"
+            report_type:
+              type: string
+              description: "'findings' (per-visit findings), 'impression' (consolidated impression + differential), or 'followup' (longitudinal comparison)"
+          required: [organ, report_type]
+
+  # ── Skill memory tools ───────────────────────────────────────────────────
+  - class_name: "distill.tool.consultant.skill_memory_mock_tool.SkillMemoryMockTool"
+    config:
+      type: native
+      store_path: "/mnt/faster_nas/benyou.mys/medixrl/data/medboard_skill_store/skill_store.jsonl"
+    tool_schema:
+      type: function
+      function:
+        name: recall_skills
+        description: >-
+          Recall reusable skills from the skill library for this patient type.
+          Call this FIRST, before reviewing evidence, to benefit from prior
+          experience with similar patients.
+        parameters:
+          type: object
+          properties:
+            organ:
+              type: string
+              description: "Organ context (e.g. liver, heart, brain, pancreas, wholebody, general)"
+            keywords:
+              type: array
+              items:
+                type: string
+              description: "Keyword list describing the case (e.g. ['fatty liver', 'volume change'])"
+          required: []
+
+  - class_name: "distill.tool.consultant.skill_memory_mock_tool.SkillMemoryMockTool"
+    config:
+      type: native
+      store_path: "/mnt/faster_nas/benyou.mys/medixrl/data/medboard_skill_store/skill_store.jsonl"
+    tool_schema:
+      type: function
+      function:
+        name: write_skill
+        description: >-
+          After solving the case, record a reusable skill so similar future
+          patients can be handled better: the patient type, the guidance that
+          worked, and pitfalls to avoid.
+        parameters:
+          type: object
+          properties:
+            patient_type:
+              type: string
+              description: "Short description of the patient type (e.g. 'Suspected hepatic steatosis on abdominal MRI')"
+            guidance:
+              type: string
+              description: "The reusable guidance that worked for this case"
+            organ:
+              type: string
+              description: "Organ tag (default 'general')"
+            pitfalls:
+              type: string
+              description: "What to avoid / which claims turned out wrong"
+            keywords:
+              type: array
+              items:
+                type: string
+              description: "Keyword tags for future recall"
+          required: [patient_type, guidance]
